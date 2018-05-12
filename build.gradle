@@ -48,9 +48,8 @@ dependencies {
     testCompile "org.junit.jupiter:junit-jupiter-api:5.1.0"
     testCompile "org.assertj:assertj-core:3.9.0"
     testCompile "org.mockito:mockito-all:1.10.19"
-    testRuntimeOnly(
-            'org.junit.jupiter:junit-jupiter-engine:5.1.0'
-    )
+    testCompile 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+
 }
 
 compileKotlin {
