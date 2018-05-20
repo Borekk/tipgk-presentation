@@ -1,37 +1,17 @@
 package pl.edu.agh.tipgk.game
 
-import com.badlogic.gdx.*
+import com.badlogic.gdx.ApplicationAdapter
+import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.Input
+import com.badlogic.gdx.InputProcessor
 import com.badlogic.gdx.graphics.*
+import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.Sprite
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.physics.box2d.*
-import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.g2d.BitmapFont
-import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer
-import com.sun.deploy.uitoolkit.ToolkitStore.dispose
-import com.badlogic.gdx.physics.box2d.EdgeShape
-import com.badlogic.gdx.physics.box2d.FixtureDef
-import com.badlogic.gdx.physics.box2d.BodyDef
-import org.lwjgl.opengl.Display.getHeight
-import org.lwjgl.opengl.Display.getWidth
-import com.badlogic.gdx.physics.box2d.PolygonShape
-import com.badlogic.gdx.physics.box2d.World
-import com.sun.awt.SecurityWarning.setPosition
-import org.lwjgl.opengl.Display.getHeight
-import org.lwjgl.opengl.Display.getWidth
-import sun.awt.windows.ThemeReader.getPosition
-import com.sun.awt.SecurityWarning.setPosition
 
-
-
-
-
-/**
- * Created by Karol on 2018-05-13.
- */
 class Collisions : ApplicationAdapter(), InputProcessor {
 
     private lateinit var batch: SpriteBatch
@@ -39,22 +19,25 @@ class Collisions : ApplicationAdapter(), InputProcessor {
     private lateinit var world: World
     private lateinit var body: Body
     private lateinit var bodyEdgeScreen: Body
-    private lateinit var font: BitmapFont
     private lateinit var debugRenderer: Box2DDebugRenderer
     private lateinit var debugMatrix: Matrix4
     private lateinit var camera: OrthographicCamera
+    private lateinit var font: BitmapFont
+    private lateinit var img: Texture
+
 
     private var torque = 0.0f
-    private var elapsed = 0.0f
     private var drawSprite = true
 
-    companion object {
-        var PIXELS_TO_METERS = 100f
-    }
+    private val PIXELS_TO_METERS = 100f
+
+    private val elapsed = 0f
 
     override fun create() {
+
         batch = SpriteBatch()
-        sprite = Sprite(drawRectangle(100, 100))
+        img = drawRectangle(30, 30)
+        sprite = Sprite(img)
 
         sprite.setPosition(-sprite.width / 2, -sprite.height / 2)
 
@@ -68,12 +51,13 @@ class Collisions : ApplicationAdapter(), InputProcessor {
         body = world.createBody(bodyDef)
 
         val shape = PolygonShape()
-        shape.setAsBox(sprite.width / 2 / PIXELS_TO_METERS, sprite.height / 2 / PIXELS_TO_METERS)
+        shape.setAsBox(sprite.width / 2f / PIXELS_TO_METERS, sprite.height
+                / 2f / PIXELS_TO_METERS)
 
         val fixtureDef = FixtureDef()
         fixtureDef.shape = shape
         fixtureDef.density = 0.1f
-        fixtureDef.restitution = 0.5f
+        fixtureDef.restitution = 0.8f
 
         body.createFixture(fixtureDef)
         shape.dispose()
@@ -85,7 +69,7 @@ class Collisions : ApplicationAdapter(), InputProcessor {
         // debug renderer
         val h = Gdx.graphics.height / PIXELS_TO_METERS - 50 / PIXELS_TO_METERS
         //bodyDef2.position.set(0,
-//                h-10/PIXELS_TO_METERS);
+        //                h-10/PIXELS_TO_METERS);
         bodyDef2.position.set(0f, 0f)
         val fixtureDef2 = FixtureDef()
 
@@ -103,13 +87,12 @@ class Collisions : ApplicationAdapter(), InputProcessor {
         font = BitmapFont()
         font.color = Color.BLACK
         camera = OrthographicCamera(Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
-
     }
 
     override fun render() {
         camera.update()
         // Step the physics simulation forward at a rate of 60hz
-        world.step(1f / 60f, 6, 2)
+        world.step(1f / 120, 12, 6)
 
         body.applyTorque(torque, true)
 
@@ -132,8 +115,8 @@ class Collisions : ApplicationAdapter(), InputProcessor {
 
         font.draw(batch,
                 "Restitution: " + body.fixtureList.first().restitution,
-                -Gdx.graphics.width / 2f,
-                Gdx.graphics.height / 2f)
+                (-Gdx.graphics.width / 2).toFloat(),
+                (Gdx.graphics.height / 2).toFloat())
         batch.end()
 
         debugRenderer.render(world, debugMatrix)
@@ -143,42 +126,22 @@ class Collisions : ApplicationAdapter(), InputProcessor {
         world.dispose()
     }
 
-    fun drawRectangle(width: Int, height: Int): Texture {
-        val pixmap = Pixmap(width, height, Pixmap.Format.RGBA8888)
-        pixmap.setColor(Color.BLUE)
-        pixmap.fillRectangle(0, 0, width, height)
-        val texture = Texture(pixmap)
-        pixmap.dispose()
-
-        return texture
-    }
-
-    override fun touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
-        return false
-    }
-
-    override fun mouseMoved(screenX: Int, screenY: Int): Boolean {
-        return false
-    }
-
-    override fun keyTyped(character: Char): Boolean {
-        return false
-    }
-
-    override fun scrolled(amount: Int): Boolean {
+    override fun keyDown(keycode: Int): Boolean {
         return false
     }
 
     override fun keyUp(keycode: Int): Boolean {
+
+
         if (keycode == Input.Keys.RIGHT)
             body.setLinearVelocity(1f, 0f)
         if (keycode == Input.Keys.LEFT)
             body.setLinearVelocity(-1f, 0f)
 
         if (keycode == Input.Keys.UP)
-            body.applyForceToCenter(0f, 10f, true)
+            body.applyForceToCenter(0f, 5f, true)
         if (keycode == Input.Keys.DOWN)
-            body.applyForceToCenter(0f, -10f, true)
+            body.applyForceToCenter(0f, -5f, true)
 
         // On brackets ( [ ] ) apply torque, either clock or counterclockwise
         if (keycode == Input.Keys.RIGHT_BRACKET)
@@ -191,7 +154,7 @@ class Collisions : ApplicationAdapter(), InputProcessor {
             torque = 0.0f
 
         // If user hits spacebar, reset everything back to normal
-        if (keycode == Input.Keys.SPACE) {
+        if (keycode == Input.Keys.SPACE || keycode == Input.Keys.NUM_2) {
             body.setLinearVelocity(0f, 0f)
             body.angularVelocity = 0f
             torque = 0f
@@ -199,28 +162,54 @@ class Collisions : ApplicationAdapter(), InputProcessor {
             body.setTransform(0f, 0f, 0f)
         }
 
-        if(keycode == Input.Keys.COMMA) {
-            body.fixtureList.first().restitution = body.fixtureList.first().restitution -0.1f
+        if (keycode == Input.Keys.COMMA) {
+            body.fixtureList.first().restitution = body.fixtureList.first().restitution - 0.1f
         }
-        if(keycode == Input.Keys.PERIOD) {
-            body.fixtureList.first().restitution = body.fixtureList.first().restitution +0.1f
+        if (keycode == Input.Keys.PERIOD) {
+            body.fixtureList.first().restitution = body.fixtureList.first().restitution + 0.1f
         }
-        if(keycode == Input.Keys.ESCAPE || keycode == Input.Keys.NUM_1)
+        if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.NUM_1)
             drawSprite = !drawSprite
 
         return true
+    }
+
+    override fun keyTyped(character: Char): Boolean {
+        return false
+    }
+
+
+    // On touch we apply force from the direction of the users touch.
+    // This could result in the object "spinning"
+    override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
+        body.applyForce(1f, 1f, screenX.toFloat(), screenY.toFloat(), true)
+        //body.applyTorque(0.4f,true);
+        return true
+    }
+
+    override fun touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
+        return false
     }
 
     override fun touchDragged(screenX: Int, screenY: Int, pointer: Int): Boolean {
         return false
     }
 
-    override fun keyDown(keycode: Int): Boolean {
+    override fun mouseMoved(screenX: Int, screenY: Int): Boolean {
         return false
     }
 
-    override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
-        body.applyForce(1f, 1f, screenX.toFloat(), screenY.toFloat(), true)
-        return true
+    override fun scrolled(amount: Int): Boolean {
+        return false
+    }
+
+    fun drawRectangle(width: Int, height: Int): Texture {
+        val pixmap = Pixmap(width, height, Pixmap.Format.RGBA8888)
+        pixmap.setColor(Color.BLUE)
+        pixmap.fillRectangle(0, 0, width, height)
+        val texture = Texture(pixmap)
+        pixmap.dispose()
+
+        return texture
     }
 }

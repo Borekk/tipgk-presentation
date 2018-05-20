@@ -2,18 +2,12 @@ package pl.edu.agh.tipgk.game
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.graphics.Color
-import com.badlogic.gdx.graphics.GL20
-import com.badlogic.gdx.graphics.Pixmap
-import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.g2d.Sprite
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector2
-import com.badlogic.gdx.physics.box2d.Body
-import com.badlogic.gdx.physics.box2d.BodyDef
-import com.badlogic.gdx.physics.box2d.World
-import com.badlogic.gdx.physics.box2d.FixtureDef
-import com.badlogic.gdx.physics.box2d.PolygonShape
+import com.badlogic.gdx.physics.box2d.*
 
 
 
@@ -29,12 +23,16 @@ class BasicGravity : ApplicationListener{
     private lateinit var smallSprite: Sprite
     private lateinit var world: World
     private lateinit var body: Body
+    private lateinit var bodyEdgeScreen: Body
+    private lateinit var debugRenderer: Box2DDebugRenderer
+    private lateinit var debugMatrix: Matrix4
+    private lateinit var camera: OrthographicCamera
 
     override fun create() {
         batch = SpriteBatch()
         //Since we need to move object it needs to be placed in Sprite
-        sprite = Sprite(prepareCircleTexture(20))
-        smallSprite = Sprite(prepareCircleTexture(10))
+        sprite = Sprite(drawCircle(20))
+        smallSprite = Sprite(drawCircle(10))
 
         sprite.setPosition(100f, Gdx.graphics.height.toFloat() - sprite.height)
         smallSprite.setPosition(200f, Gdx.graphics.height.toFloat() - smallSprite.height)
@@ -57,24 +55,47 @@ class BasicGravity : ApplicationListener{
 
         val fixtureDef = FixtureDef()
         fixtureDef.shape = shape
-        fixtureDef.density = 1f
+        fixtureDef.density = 0.1f
+        fixtureDef.restitution = 0.5f
 
         val fixture = body.createFixture(fixtureDef)
 
+        val bodyDef2 = BodyDef()
+        bodyDef2.type = BodyDef.BodyType.StaticBody
+        val w = Gdx.graphics.width.toFloat()
+        // Set the height to just 50 pixels above the bottom of the screen so we can see the edge in the
+        // debug renderer
+        val h = Gdx.graphics.height.toFloat() - 150
+        //bodyDef2.position.set(0,
+//                h-10/PIXELS_TO_METERS);
+        bodyDef2.position.set(0f, 0f)
+        val fixtureDef2 = FixtureDef()
+
+        val edgeShape = EdgeShape()
+        edgeShape.set(-w / 2, -h / 2, w / 2, -h / 2)
+        fixtureDef2.shape = edgeShape
+
+        bodyEdgeScreen = world.createBody(bodyDef2)
+        bodyEdgeScreen.createFixture(fixtureDef2)
+        edgeShape.dispose()
+
         // Shape is the only disposable of the lot, so get rid of it
         shape.dispose()
+        debugRenderer = Box2DDebugRenderer()
+        camera = OrthographicCamera(Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
     }
 
     override fun render() {
+        camera.update()
         world.step(Gdx.graphics.deltaTime, 6, 2)
-        sprite.setPosition(body.position.x, body.position.y)
+        sprite.setPosition((body.position.x ) - sprite.width / 2,
+                (body.position.y ) - sprite.height / 2)
 
         Gdx.gl.glClearColor(1f, 1f, 1f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
         batch.begin()
         batch.draw(sprite, sprite.x, sprite.y)
-        batch.draw(smallSprite, smallSprite.x, smallSprite.y)
         batch.end()
     }
 
@@ -82,7 +103,7 @@ class BasicGravity : ApplicationListener{
         world.dispose()
     }
 
-    fun prepareCircleTexture(radius: Int ) : Texture {
+    fun drawCircle(radius: Int ) : Texture {
         val pixmap = Pixmap(radius *2, radius *2, Pixmap.Format.RGBA8888)
         pixmap.setColor(Color.GREEN)
         pixmap.fillCircle(radius, radius, radius)
